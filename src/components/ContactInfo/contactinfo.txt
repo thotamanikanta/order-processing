@@ -1,0 +1,380 @@
+import { Component, Fragment } from 'react';
+import React from 'react';
+
+import { Form, Button, Col, Row, ButtonGroup, ButtonToolbar, Card, Container } from 'react-bootstrap';
+import Select from 'react-select';
+import SweetAlert from 'react-bootstrap-sweetalert';
+import validator from 'validator';
+
+
+function getContactDetailsListFromLocalStorage() {
+	let stringifiedContactDetailsList = localStorage.getItem('contactDetailsList');
+	let parsedContactDetailsList = JSON.parse(stringifiedContactDetailsList);
+	if (parsedContactDetailsList === null) {
+		return [];
+	} else {
+		return parsedContactDetailsList;
+	}
+}
+
+let contactDetailsList = getContactDetailsListFromLocalStorage();
+
+const companyOptions = [
+	{ value: 'customer', label: 'Customer' },
+	{ value: 'channel partner', label: 'Channel Partner' },
+	{ value: 'Dtorage', label: 'Distributer' }
+];
+
+const isRequired = (value) => value !== null && value !== '' && value;
+
+function CompanyInfo() {
+	const [ companyType, onChangeCompanyType ] = React.useState('');
+	const [ name, onChangeName ] = React.useState('');
+	const [ designation, onChangeDesignation ] = React.useState('');
+	const [ email, onChangeEmail ] = React.useState('');
+	const [ phone1, onChangePhone1 ] = React.useState('');
+	const [ phone2, onChangePhone2 ] = React.useState('');
+
+	const [ typeRequiredState, setTypeRequiredState ] = React.useState(true);
+	const [ nameRequiredState, setNameRequiredState ] = React.useState(true);
+	const [ designationRequiredState, setDesignationRequiredState ] = React.useState(true);
+	const [ emailRequiredState, setEmailRequiredState ] = React.useState(true);
+	const [ phone1RequiredState, setPhone1RequiredState ] = React.useState(true);
+	const [ phone2RequiredState, setPhone2RequiredState ] = React.useState(true);
+
+	const [emailError,setEmailError]=React.useState(null)
+
+	const [ customerEmailExistsError, setCustomerEmailExistsError ] = React.useState(false);
+	const [customerNumberExistsError,setCustomerNumberExistsError]=React.useState(false)
+	
+	const emailErrorTag=(<small className="text-danger mt-2">* Please enter valid email </small>)
+
+	const [alertState, setAlertState] = React.useState(false);
+	console.log(name, companyType);
+
+	const submitContactDetails = (event) => {
+		event.preventDefault();
+		console.log(event);
+		if (companyType === '') {
+			setTypeRequiredState(false);
+		} else {
+			setTypeRequiredState(true);
+		}
+		if (name === '') {
+			setNameRequiredState(false);
+		} else {
+			setNameRequiredState(true);
+		}
+		if (designation === '') {
+			setDesignationRequiredState(false);
+		} else {
+			setDesignationRequiredState(true);
+		}
+		if (email === '') {
+			setEmailRequiredState(false);
+		} else {
+			setEmailRequiredState(true);
+		}
+		if (phone1 === '') {
+			setCustomerNumberExistsError(false)
+			setPhone1RequiredState(false);
+		} else {
+			setPhone1RequiredState(true);
+		}
+
+		if (companyType !== '' && name !== '' && designation !== '' && email !== '' && phone1 !== '') {
+			setAlertState(
+				true
+			  );
+			const info = {
+				name,
+				designation,
+				companyType: companyType.value,
+				email,
+				phone1,
+				phone2,
+				contactId: contactDetailsList.length
+			};
+			contactDetailsList.push(info);
+			localStorage.setItem('contactDetailsList', JSON.stringify(contactDetailsList));
+		}
+	};
+
+	const onClickCancelButton=()=>{
+		onChangeName('')
+		onChangeDesignation('')
+		onChangeEmail('')
+		onChangeCompanyType('')
+		onChangePhone1('')
+		onChangePhone2('')
+
+		setDesignationRequiredState('')
+		setEmailRequiredState('')
+		setNameRequiredState('')
+		setTypeRequiredState('')
+		setPhone1RequiredState('')
+		setPhone2RequiredState('')
+	}
+
+	const checkCustomerEmailExists = (event) => {
+		
+			for (let i = 0; i < contactDetailsList.length; i++) {
+				console.log(event.target, '##########');
+				console.log(contactDetailsList[i].name, '@@@@@#####@@@', i);
+				
+				if (contactDetailsList[i].email === event.target.value) {
+					onChangeEmail('')
+					
+					setEmailRequiredState(true);
+					setCustomerEmailExistsError(true);
+					break;
+				}
+				else if(event.target.value===''){
+					setEmailRequiredState(false);
+				} 
+				else {
+					console.log(contactDetailsList[i].name, '@@@@@@@@');
+					
+					setCustomerEmailExistsError(false);
+				}
+			}
+		
+	};
+
+	const checkCustomerNumberExists = (event) => {
+		
+		for (let i = 0; i < contactDetailsList.length; i++) {
+			console.log(event.target, '##########');
+			console.log(contactDetailsList[i].name, '@@@@@#####@@@', i);
+			
+			if (contactDetailsList[i].phone1 === event.target.value) {
+				onChangePhone1('')
+				
+				setPhone1RequiredState(true);
+				setCustomerNumberExistsError(true);
+				break;
+			}
+			else if(event.target.value===''){
+				setPhone1RequiredState(false);
+			} 
+			else {
+				console.log(contactDetailsList[i].name, '@@@@@@@@');
+				
+				setCustomerNumberExistsError(false);
+			}
+		}
+	
+};
+
+	return (
+		<Fragment>
+			<Container fluid style={{height:"70vh",marginTop:"100px"}}>
+				<Row className="d-flex flex-column justify-content-center align-items-center ">
+					<Col column xs="12" xl="6" >
+						<Form className="form-horizontal" >
+							<Card className="horizontal-form">
+								<Card.Header>
+									<Card.Title as="h4" className="text-center mb-3">Please provide contact details</Card.Title>
+								</Card.Header>
+								<Card.Body className="ml-5 mr-5">
+									<Form.Group>
+										<Row>
+											<Col className="control-label text-left" md="4">
+												Type
+											</Col>
+											<Col md="8">
+												<Select
+													name="bootstrapSelect"
+													options={companyOptions}
+													value={companyType}
+													onChange={(value) => {
+														onChangeCompanyType(value);
+														if (isRequired(value)) {
+															setTypeRequiredState(true);
+														} else {
+															setTypeRequiredState(false);
+														}
+													}}
+												/>
+												{typeRequiredState ? null : (
+													<label className="text-danger">This field is required.</label>
+												)}
+											</Col>
+										</Row>
+									</Form.Group>
+									<Form.Group>
+										<Row>
+											<Col className="control-label text-left" md="4">
+												*  Name:
+											</Col>
+											<Col md="8">
+												<Form.Control
+													type="text"
+													placeholder="customer name"
+													value={name}
+													onChange={(e) => {
+														onChangeName(e.target.value);
+														if (isRequired(e.target.value)) {
+															setNameRequiredState(true);
+														} else {
+															setNameRequiredState(false);
+														}
+													}}
+													onBlur={(e)=>{
+														if(e.target.value===''){
+															setNameRequiredState(false)
+														}
+													}}
+												/>
+												{nameRequiredState ? null : (
+													<label className="text-danger">This field is required.</label>
+												)}
+											</Col>
+										</Row>
+									</Form.Group>
+									<Form.Group>
+										<Row>
+											<Col className="control-label text-left" md="4">
+												* Designation:
+											</Col>
+											<Col md="8">
+												<Form.Control
+													placeholder="Designation"
+													value={designation}
+													onChange={(e) => {
+														onChangeDesignation(e.target.value);
+														if (isRequired(e.target.value)) {
+															setDesignationRequiredState(true);
+														} else {
+															setDesignationRequiredState(false);
+														}
+													}}
+													onBlur={(e)=>{
+														if(e.target.value===''){
+															setDesignationRequiredState(false)
+														}
+													}}
+												/>
+												{designationRequiredState ? null : (
+													<label className="text-danger">This field is required.</label>
+												)}
+											</Col>
+										</Row>
+									</Form.Group>
+									<Form.Group>
+										<Row>
+											<Col className="control-label text-left" md="4">
+												* Email:
+											</Col>
+											<Col md="8">
+												<Form.Control
+													type="email"
+													value={email}
+													placeholder="example@gmail.com"
+													onChange={(e) => {
+														onChangeEmail(e.target.value);
+														if(validator.isEmail(e.target.value)){
+															console.log("valid email")
+														}
+														if (isRequired(e.target.value)) {
+															setEmailRequiredState(true);
+														} else {
+															setEmailRequiredState(false);
+														}
+													}}
+													onBlur={(e)=>{
+														checkCustomerEmailExists(e)
+													}}
+												/>
+												{!customerEmailExistsError ? null : (
+													<label className="text-danger">This email already exists.</label>
+												)}
+												{emailRequiredState ? null : (
+													<label className="text-danger">This field is required.</label>
+												)}
+											</Col>
+										</Row>
+									</Form.Group>
+									<Form.Group>
+										<Row>
+											<Col className="control-label text-left" md="4">
+												Phone Number:
+											</Col>
+											<Col md="8">
+												<Form.Control
+													placeholder="Phone Number"
+													value={phone1}
+													onChange={(e) => {
+														onChangePhone1(e.target.value);
+														if (isRequired(e.target.value)) {
+															setPhone1RequiredState(true);
+														} else {
+															setPhone1RequiredState(false);
+														}
+													}}
+													onBlur={(e)=>{
+														checkCustomerNumberExists(e)
+													}}
+												/>
+												{!customerNumberExistsError ? null : (
+													<label className="text-danger">This mobile number already exists.</label>
+												)}
+												{phone1RequiredState ? null : (
+													<label className="text-danger">This field is required.</label>
+												)}
+											</Col>
+										</Row>
+									</Form.Group>
+									<Form.Group>
+										<Row>
+											<Col className="control-label text-left" md="4">
+												Alternate Number:
+											</Col>
+											<Col md="8">
+												<Form.Control
+													placeholder="Phone Number"
+													value={phone2}
+													onChange={(e) => {
+														onChangePhone2(e.target.value);
+														
+													}}
+												/>
+											</Col>
+										</Row>
+									</Form.Group>
+									
+								</Card.Body>
+								<Card.Footer className="d-flex justify-content-between">
+									<Button className="btn-wd " type="button" variant="primary" onClick={onClickCancelButton}>
+										Cancel
+									</Button>
+									<Button className="btn-wd" type="button" variant="primary" onClick={submitContactDetails}>
+										Save
+									</Button>
+								</Card.Footer>
+								
+								{
+									alertState?(
+										<SweetAlert
+											success
+											style={{ display: "block", marginTop: "-100px" }}
+											title="Good job!"
+											onConfirm={() => setAlertState(false)}
+											onCancel={() => setAlertState(false)}
+											confirmBtnBsStyle="info"
+										>
+											You clicked the finish button!
+										</SweetAlert>
+									):null
+								}
+                
+							</Card>
+						</Form>
+					</Col>
+				</Row>
+			</Container>
+		</Fragment>
+	);
+}
+
+export default CompanyInfo;

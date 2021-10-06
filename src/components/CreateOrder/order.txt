@@ -1,0 +1,520 @@
+import React from "react";
+// react component used to create charts
+import SweetAlert from "react-bootstrap-sweetalert";
+// react component that creates a form divided into multiple steps
+import ReactWizard from "react-bootstrap-wizard";
+// react-bootstrap components
+import {
+  Badge,
+  Button,
+  Card,
+  Form,
+  InputGroup,
+  Navbar,
+  Nav,
+  TabContent,
+  TabPane,
+  Container,
+  Row,
+  Col,
+} from "react-bootstrap";
+import {  format } from 'date-fns'
+
+
+import Product from "./Product.js";
+import ProductType from "./ProductType.js";
+import UploadDocument from "./UploadDocument.js";
+
+
+function getProductListFromLocalStorage() {
+  let stringifieProductList= localStorage.getItem("selectedProductList");
+  let parsedProductList = JSON.parse(stringifieProductList);
+  if (parsedProductList === null) {
+      return [];
+  } else {
+      return parsedProductList;
+  }
+}
+
+let selectedProductList = getProductListFromLocalStorage()
+
+let products={}
+
+
+function Order() {
+    const [alertState, setAlertState] = React.useState(false);
+
+    
+  const [ customerType, onClickCustomerType ] = React.useState('');
+	const [ customerInput, onChangeInput ] = React.useState('');
+	const [ channelInput, onChangeChannel ] = React.useState('');
+	const [ distrubuterInput, onChangeDistributer ] = React.useState('');
+  const [email, setEmail] = React.useState("");
+  const [ productSelectd, onChangeProduct ] = React.useState({ 0: ''});
+  const [uploadedFile, onUploadFile] = React.useState('');
+  const [isSubmitted,setIsSubmitted]=React.useState(false)
+  const steps = [
+    { stepName: "Order Type", component: ProductType, stepProps:{
+      customerType,onClickCustomerType,customerInput,onChangeInput,channelInput,onChangeChannel,distrubuterInput,onChangeDistributer
+    }},
+    { stepName: "Product", component: Product, stepProps:{
+      productSelectd,onChangeProduct
+    }},
+    { stepName: "Upload Document", component: UploadDocument, stepProps:{
+      uploadedFile,onUploadFile
+    }},
+  ];
+
+  let i=1
+  
+ const onCLickFInsih=()=>{
+  const curDate=format(new Date(),'dd-mm-yyyy')
+
+   for (let each in productSelectd){
+     let name='product'+i
+     products[[name]]=productSelectd[each].value
+     i++
+   }
+   let customers
+   if(customerType==='Direct'){
+      customers={endCustomer:customerInput}
+   }
+   if(customerType==='Channel Partner'){
+     customers={endCustomer:customerInput,channelPartner:channelInput}
+   }
+   if(customerType==='Distributer'){
+    customers={endCustomer:customerInput,channelPartner:channelInput,Distributer:distrubuterInput}
+  }
+  selectedProductList.push({id:selectedProductList.length,customerType:customerType,customers:customers,productSelectd:products, fileUploaded:uploadedFile,date:curDate})
+  localStorage.setItem('selectedProductList',JSON.stringify(selectedProductList))
+  onClickCustomerType('')
+  onChangeChannel('')
+  onChangeDistributer('')
+  onChangeInput('')
+  onChangeProduct({ 0: ''})
+  onUploadFile('')
+  setIsSubmitted(true)
+ }
+
+
+    return (
+      <>
+        <Container fluid style={{minHeight:"75vh",marginTop:"70px"}}>
+          <Row>
+            <Col className="m-auto " md="8">
+              <ReactWizard
+                steps={steps}
+                navSteps
+                title="Select the product"
+                description=""
+                headerTextCenter
+                validate
+                color="blue"
+                previousButtonText="Back"
+                nextButtonText="Next"
+                finishButtonClasses="btn-info btn-wd"
+                nextButtonClasses="btn-info btn-wd"
+                previousButtonClasses="btn-wd"
+                finishButtonClick={() => {
+                  onCLickFInsih()
+                  setAlertState(
+                    <SweetAlert
+                      success
+                      style={{ display: "block", marginTop: "-100px" }}
+                      title="Good job!"
+                      onConfirm={() => setAlertState(null)}
+                      onCancel={() => setAlertState(null)}
+                      confirmBtnBsStyle="info"
+                    >
+                      You clicked the finish button!
+                    </SweetAlert>
+                  );
+                }}
+              />
+            </Col>
+          </Row>
+        </Container>
+        {alertState}
+      </>
+    );
+}
+
+export default Order
+
+
+
+
+
+
+import React, { Fragment } from 'react';
+import { Row, Col, FormGroup, FormControl, FormLabel, FormCheck, Form } from 'react-bootstrap';
+import { Typeahead } from 'react-bootstrap-typeahead';
+
+const endCustomers = [
+	'Edinbridge Skill Solutions Pvt Ltd',
+	'Daily Thanthi',
+	'Readylink',
+	'Zero One Media',
+	'Dinakaran',
+	'Sans Pareil',
+	'The Residency',
+	'Kumudam',
+	'Sushmaas Enterprises',
+	'Cadgraf Digitals pvt ltd'
+];
+const distributers = endCustomers.concat();
+const channelPartners = endCustomers.concat();
+
+const ProductType = React.forwardRef((props, ref) => {
+	const [ customerTypeError, setTypeError ] = React.useState(null);
+	const [ customerInputError, setCustomerInputError ] = React.useState(null);
+	const [ channelInputError, setChannelInputError ] = React.useState(null);
+	const [ DistributerInputError, setDistributerInputError ] = React.useState(null);
+
+	const [ customerCurrentError, setCustomerCurrentError ] = React.useState(null);
+	const [ channelCurrentError, setChannelCurrentError ] = React.useState(null);
+	const [ DistributerCurrentError, setDistributerCurrentError ] = React.useState(null);
+
+	const {
+		customerType,
+		onClickCustomerType,
+		customerInput,
+		onChangeInput,
+		onChangeChannel,
+		channelInput,
+		distrubuterInput,
+		onChangeDistributer,
+		isChecked,
+		setIsChecked
+	} = props;
+
+	const isValidated = () => {
+		customerType === ''
+			? setTypeError(<small className="text-danger mt-2">* You have to select a customer type.</small>)
+			: setTypeError(null);
+		let typeError = customerType !== '';
+		let customerError = true;
+		if (customerType === 'Direct') {
+			customerInput === ''
+				? setCustomerInputError(
+						<small className="text-danger text-center mb-3">* You have to select an end customer .</small>
+					)
+				: setCustomerInputError(null);
+
+			if (customerInput === '') {
+				customerError = false;
+			}
+		}
+		if (customerType === 'Channel Partner') {
+			customerInput === ''
+				? setCustomerInputError(
+						<small className="text-danger text-center ">* You have to select an end customer .</small>
+					)
+				: setCustomerInputError(null);
+			channelInput === ''
+				? setChannelInputError(
+						<small className="text-danger text-right">* You have to select a Channel Partner.</small>
+					)
+				: setChannelInputError(null);
+
+			if (customerInput === '' || channelInput === '') {
+				customerError = false;
+			}
+		}
+		if (customerType === 'Distributer') {
+			customerInput === ''
+				? setCustomerInputError(
+						<small className="text-danger  text-center">* You have to select an end customer .</small>
+					)
+				: setCustomerInputError(null);
+			channelInput === ''
+				? setChannelInputError(
+						<small className="text-danger text-right">* You have to select a Channel Partner.</small>
+					)
+				: setChannelInputError(null);
+			distrubuterInput === ''
+				? setDistributerInputError(
+						<small className="text-danger text-right">* You have to select a Distributer.</small>
+					)
+				: setDistributerInputError(null);
+
+			if (customerInput === '' || channelInput === '' || distrubuterInput === '') {
+				customerError = false;
+			}
+		}
+		let valid = typeError && customerError;
+		return valid;
+	};
+	React.useImperativeHandle(ref, () => ({
+		isValidated: () => {
+			return isValidated();
+		}
+	}));
+
+	const onCustomerKeyEnter = (value) => {
+		const newCustomerList = endCustomers.filter((each) => each.toLowerCase().includes(value.toLowerCase()));
+		if (value === '') {
+			setCustomerInputError(<small className="text-danger mt-2">* You have to select a Channel Partner </small>);
+		} else setCustomerInputError(null);
+		if (newCustomerList.length === 0) {
+			setCustomerCurrentError(
+				<small className="text-danger text-right">* Please select from exixting customer list.</small>
+			);
+		} else {
+			setCustomerCurrentError(null);
+		}
+	};
+
+	const onChannelKeyEnter = (value) => {
+		const newCustomerList = channelPartners.filter((each) => each.toLowerCase().includes(value.toLowerCase()));
+		if (value === '') {
+			setChannelInputError(<small className="text-danger mt-2">* You have to select a Channel Partner </small>);
+		} else setChannelInputError(null);
+		if (newCustomerList.length === 0) {
+			setChannelCurrentError(
+				<small className="text-danger text-right">* Please select from exixting Channel Partner list.</small>
+			);
+		} else {
+			setChannelCurrentError(null);
+		}
+	};
+
+	const onDistributerKeyEnter = (value) => {
+		const newCustomerList = distributers.filter((each) => each.toLowerCase().includes(value.toLowerCase()));
+		if (value === '') {
+			setDistributerInputError(
+				<small className="text-danger mt-2">* You have to select a Channel Partner </small>
+			);
+		} else setDistributerInputError(null);
+		if (newCustomerList.length === 0) {
+			setDistributerCurrentError(
+				<small className="text-danger text-right">* Please select from exixting ditributers list.</small>
+			);
+		} else {
+			setDistributerCurrentError(null);
+		}
+	};
+
+	const renderEndCustomerDetails = () => {
+		return (
+			<Form.Group as={Row} className="search-group mt-3" controlId="formPlaintextText">
+				<Form.Label column sm="6">
+					* End Customer:
+				</Form.Label>
+				<Col sm="12">
+					<Typeahead
+						id="basic-typeahead-single"
+						labelKey="name"
+						onChange={(event) => {
+							onChangeInput(event);
+						}}
+						onInputChange={(value) => {
+							setCustomerInputError(null);
+							onCustomerKeyEnter(value);
+						}}
+						options={endCustomers}
+						selected={customerInput}
+					/>
+				</Col>
+			</Form.Group>
+		);
+	};
+
+	const renderChannelPartnerDetails = () => {
+		return (
+			<Form.Group as={Row} className="search-group mt-3" controlId="formPlaintextText">
+				<Form.Label column sm="6">
+					* Channel Partner:
+				</Form.Label>
+				<Col sm="12">
+					<Typeahead
+						id="basic-typeahead-single"
+						labelKey="name"
+						onChange={(event) => {
+							onChangeChannel(event);
+						}}
+						onInputChange={(value) => {
+							onChannelKeyEnter(value);
+						}}
+						options={channelPartners}
+						selected={channelInput}
+					/>
+				</Col>
+			</Form.Group>
+		);
+	};
+
+	const renderDistributerDetails = () => {
+		return (
+			<Form.Group as={Row} className="search-group mt-3" controlId="formPlaintextText">
+				<Form.Label column md="6">
+					* Distributer:
+				</Form.Label>
+				<Col md="12">
+					<Typeahead
+						id="basic-typeahead-single"
+						labelKey="name"
+						onChange={(event) => {
+							onChangeDistributer(event);
+						}}
+						onInputChange={(value) => {
+							onDistributerKeyEnter(value);
+						}}
+						options={distributers}
+						selected={distrubuterInput}
+					/>
+				</Col>
+			</Form.Group>
+		);
+	};
+
+	const selectCustomer = () => {
+		switch (customerType) {
+			case 'Direct':
+				return (
+					<Fragment>
+						{renderEndCustomerDetails()}
+						{customerCurrentError}
+						{customerInputError}
+					</Fragment>
+				);
+
+			case 'Channel Partner':
+				return (
+					<Fragment>
+						{renderEndCustomerDetails()}
+						{customerCurrentError}
+						{customerInputError}
+						{renderChannelPartnerDetails()}
+						{channelCurrentError}
+						{channelInputError}
+					</Fragment>
+				);
+			case 'Distributer':
+				return (
+					<Fragment>
+						{renderEndCustomerDetails()}
+						{customerCurrentError}
+						{customerInputError}
+						{renderChannelPartnerDetails()}
+						{channelCurrentError}
+						{channelInputError}
+						{renderDistributerDetails()}
+						{DistributerCurrentError}
+						{DistributerInputError}
+					</Fragment>
+				);
+			default:
+				return null;
+		}
+	};
+
+	return (
+		<div className="wizard-step d-flex flex-column align-items-center" ref={ref}>
+			<h4 className="mb-5 ">Please select the type of customer.</h4>
+			<Row className="">
+				<Col md="12" className="d-flex flex-column justify-content-center">
+					<Col md="3" className="m-auto">
+					<FormGroup className="">
+						<FormCheck
+							className="text-black"
+							type="radio"
+							id="direct"
+							label="Direct"
+							name="order"
+							onClick={(event) => onClickCustomerType(event.target.value)}
+							value="direct"
+						/>
+					</FormGroup>
+				</Col>
+				<Col md="3">
+					<FormGroup>
+						<FormCheck
+							type="radio"
+							id="channelPartner"
+							label="channel partner"
+							name="order"
+							onClick={(event) => onClickCustomerType(event.target.value)}
+							value="channel partner"
+						/>
+					</FormGroup>
+				</Col>
+				<Col md="3">
+					<FormGroup>
+						<FormCheck
+							type="radio"
+							id="distributer"
+							label="distributer"
+							name="order"
+							onClick={(event) => onClickCustomerType(event.target.value)}
+							value="distributer"
+						/>
+					</FormGroup>
+				</Col>
+					<Form.Group>
+						<Form.Check type="radio" id="channelPartner">
+							<Form.Check.Input type="radio" value="Channel Partner"  name="order" onClick={(event) => {
+									onClickCustomerType(event.target.value);
+									setTypeError(null);
+								}}/>
+							<Form.Check.Label className="text-dark" style={{ fontSize: '1rem' }}>Channel Partner</Form.Check.Label>
+							
+						</Form.Check>
+					</Form.Group>
+					<Form.Group>
+						<Form.Check type="radio" name="order">
+							<Form.Check.Input
+								type="radio"
+								value="Direct"
+								name="order"
+								onClick={(event) => {
+									onClickCustomerType(event.target.value);
+									setTypeError(null);
+								}}
+							/>
+							<Form.Check.Label className="text-dark" style={{ fontSize: '1rem' }}>
+								Direct
+							</Form.Check.Label>
+						</Form.Check>
+						<Form.Check type="radio" id="channelPartner" name="order">
+							<Form.Check.Input
+								type="radio"
+								value="Channel Partner"
+								onClick={(event) => {
+									onClickCustomerType(event.target.value);
+									setTypeError(null);
+								}}
+								name="order"
+							/>
+							<Form.Check.Label className="text-dark" style={{ fontSize: '1rem' }}>
+								Channel Partner
+							</Form.Check.Label>
+						</Form.Check>
+						<Form.Check type="radio" id="Distributer" name="order">
+							<Form.Check.Input
+								type="radio"
+								value="Distributer"
+								name="order"
+								onClick={(event) => {
+									onClickCustomerType(event.target.value);
+									setTypeError(null);
+								}}
+							/>
+							<Form.Check.Label className="text-dark" style={{ fontSize: '1rem' }}>
+								Distributer
+							</Form.Check.Label>
+						</Form.Check>
+					</Form.Group>
+				</Col>
+			</Row>
+			<Row>
+				<Col md="12">{customerTypeError}</Col>
+			</Row>
+			<Row>
+				<Col md={{ span: 10, offset: 1 }}>{selectCustomer()}</Col>
+			</Row>
+		</div>
+	);
+});
+
+export default ProductType;
